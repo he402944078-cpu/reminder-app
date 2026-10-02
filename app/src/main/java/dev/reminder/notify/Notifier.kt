@@ -11,6 +11,7 @@ import dev.reminder.R
 import dev.reminder.data.ReminderTask
 import dev.reminder.domain.MergePolicy
 import dev.reminder.domain.Scheduler
+import dev.reminder.schedule.NotificationActionReceiver
 import java.time.LocalDateTime
 
 /** 通知构建与发送 */
@@ -55,7 +56,7 @@ object Notifier {
             .setStyle(
                 NotificationCompat.BigTextStyle()
                     .setBigContentTitle(title)
-                    .setBigText(text)
+                    .bigText(text)
             )
             .setPriority(
                 if (quiet) NotificationCompat.PRIORITY_LOW else NotificationCompat.PRIORITY_HIGH

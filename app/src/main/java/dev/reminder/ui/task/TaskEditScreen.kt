@@ -2,6 +2,7 @@ package dev.reminder.ui.task
 
 import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,7 +39,7 @@ import dev.reminder.ui.common.SwitchRow
 import dev.reminder.ui.common.TimeField
 import java.time.LocalDateTime
 
-private const val MIN_INTERVAL = 5
+private const val MIN_INTERVAL = 15
 private const val MAX_INTERVAL = 180
 private const val RECOMMENDED_MIN = 15
 
@@ -82,7 +83,7 @@ fun TaskEditScreen(taskId: String?, onDone: () -> Unit) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.Padding(12.dp),
+        contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
