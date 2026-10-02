@@ -29,6 +29,8 @@ git push -u origin main
 
 3. 进最新的 run → Artifacts → 下载 **`reminder-debug-apk`** → 解压得到 `app-debug.apk`。
 
+   > 当前绿包：run [`36961792934`](https://github.com/he402944078-cpu/reminder-app/actions/runs/36961792934)（`test` 19 例通过 + `apk`），产物 `reminder-debug-apk` 约 11.2 MB，解压后 `app-debug.apk` 约 12.5 MB。私有仓库需登录 GitHub 才能下载；本机已下载一份在 `release/app-debug.apk`（已 gitignore，不入库）。
+
 4. 传到手机安装（需允许「安装未知来源应用」）：
 
 ```bash

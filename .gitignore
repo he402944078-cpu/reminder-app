@@ -9,3 +9,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# 本地下载的 CI 产物，不入库
+/release/

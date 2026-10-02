@@ -228,7 +228,7 @@ reminder-app/
 
 ---
 
-## 11. 实现进度（v0.3 · 代码已落地，待 CI 首构建）
+## 11. 实现进度（v0.4 · CI 已出绿包，待真机验收）
 
 ### 已完成（M0 + M1 + M2 + M3 主体）
 
@@ -251,7 +251,7 @@ reminder-app/
 - 停用任务 `nextFire` 返回 `null`，闹钟取消。
 
 ### 待办（需真机 / CI 反馈）
-1. CI 首构建日志校对（依赖解析、lint 规则、资源引用）。
+1. ~~CI 首构建日志校对（依赖解析、lint 规则、资源引用）。~~ ✅ 已完成，见 §11.2：3 轮出绿，APK 产物 `reminder-debug-apk` 已下载。
 2. 真机验收清单（§6 的 7 项硬指标），尤其小米/华为自启与省电模式 8 h。
 3. 可选增强：桌面倒计时小组件、深色模式细节、签名 release 包与自更新。
 4. iOS v2（预设间隔 {15,20,30,45,60,90,120,180} + 64 条额度约束）。
@@ -265,10 +265,26 @@ reminder-app/
 | 跨包引用 | 修复 1 处 **BLOCKER**：`TimelineScreen.kt` 使用 `PermissionActions` 缺 `import dev.reminder.ui.common.PermissionActions` |
 | 未使用 import | 清理 9 处（TimelineScreen 4、TemplatesScreen 1、SettingsScreen 4 含 `Column`、TaskEditScreen 2 含 `Column`、Components 2 含 `Arrangement`/`size`）；`getValue`/`setValue` 为 `by` 委托所需，**保留** |
 | 调用签名 | `AppGraph.io{}`、`settings.state.value`、`repo.importJson(text, replace): Int`、`coordinator.*`、`Notifier.show(context, task, missed, snoozed, next)`、`AlarmScheduler.schedule(id, at, snoozed=false)` 全部与定义一致 |
-| Compose API | `LinearProgressIndicator(progress = Float)`、`Slider(valueRange, steps)`、`Modifier.weight`（Row/Column 作用域内）、`LazyVerticalGrid + items`、`FilterChip(label = { })`、`Padding(all: Dp)` 均为 material3 1.3.1 / compose 1.7.5 合法签名 |
+| Compose API | `LinearProgressIndicator(progress = Float)`、`Slider(valueRange, steps)`、`Modifier.weight`（Row/Column 作用域内）、`LazyVerticalGrid + items`、`FilterChip(label = { })` 为 material3 1.3.1 / compose 1.7.5 合法签名；~~`Padding(all: Dp)`~~ 见 §11.2（1.7.5 已移除） |
 | 系统 API 等级 | `canScheduleExactAlarms`/`ACTION_REQUEST_SCHEDULE_EXACT_ALARM` 有 `SDK_INT >= S` 守卫；`ACTION_APP_NOTIFICATION_SETTINGS`(26)、`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`(23)、`isIgnoringBatteryOptimizations`(23) 均 ≥ minSdk 26 |
 | 资源引用 | 代码仅引用 `R.drawable.ic_stat_reminder`；`res/` 内 vector 图标、`@color/ic_launcher_background`、`Theme.Material3.DayNight.NoActionBar` 均存在；minSdk 26 → 仅需 `mipmap-anydpi-v26`，无缺失 PNG |
 | 单测可编译性 | `SchedulerTest`(12) / `MergePolicyTest`(7) 的 16 个具名构造参数与 `ReminderTask` 一致；期望值按调度语义逐条复算（27 槽位、跨零点 3 次、周过滤 2 次、定点 2 次） |
 | 清单/构建 | manifest 无 `FOREGROUND_SERVICE`；`libs.versions.toml` 别名与 `app/build.gradle.kts` 引用一一对应；CI 用 `setup-gradle@v4` + `gradle-version: 8.10`，不依赖 wrapper jar |
 
 结论：未发现剩余 BLOCKER 级问题；剩余风险集中在 CI 首构建的依赖解析与 lint 规则（待办 1）。
+
+### 11.2 CI 首构建审计记录（v0.4 · 已出包）
+
+| 轮次 | run | 结果 | 根因 | 修复 |
+|---|---|---|---|---|
+| #1 | `36955215338` | ❌ `test` | `android-actions/setup-android@v3` 安装已移除的 legacy `tools` 包 → `sdkmanager` 退出码 1 | 去掉该 action，直接调用 runner 预装的 `sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;34.0.0"` |
+| #2 | `36956883515` | ❌ `test` | 80 条 Kotlin 编译错误，收敛为 3 个根因（其余 70+ 条是级联） | 见下 |
+| #3 | `36961792934` | ✅ `test` + `apk` | — | artifact `reminder-debug-apk`（11.2 MB，19 个单测通过） |
+
+三个真实根因（已用 Google Maven 上 `foundation-layout-android-1.7.5-sources.jar` / `foundation-android-1.7.5-sources.jar` 逐条核对，非凭记忆）：
+
+1. **`collectAsStateWithLifecycle` 属于 `androidx.lifecycle.compose`**，不是 `androidx.compose.runtime`（后者只有 `collectAsState`）→ 4 个界面文件改 import。
+2. **`androidx.compose.foundation.layout.Padding` 自 Compose 1.7.0 起已删除**：1.7.5 的 `Padding.kt` 里只剩 `PaddingValues`，且 `LazyColumn/LazyRow` 的 `contentPadding` 形参类型是 `PaddingValues` → 6 个界面文件改为 `contentPadding = PaddingValues(12.dp)`。
+3. `Notifier.kt` 用了 Java setter 形式 `.setBigText(text)`（Kotlin 应写属性 `.bigText(text)`），并缺 `NotificationActionReceiver` 的 import（连带 `setAction` 一起报未解析）→ 两处修正。
+
+审计教训：**「凭记忆认定第三方库 API 存在」是静态审计的最大风险源**。涉及库签名时以 sources jar / API dump 为准；Compose 1.7 的 `Padding → PaddingValues` 属于跨版本删除，光看 IDE 提示不足以发现。
